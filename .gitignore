@@ -2,3 +2,6 @@
 */*.npy
 */*.jpg
 */.vscode
+/data/*
+/.vscode/*
+
