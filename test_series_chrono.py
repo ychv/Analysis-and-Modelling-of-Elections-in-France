@@ -1,76 +1,121 @@
 #%%
 import pandas as pd
-
-path = "data/data_merged_20250922.parquet"
-
-def importCommuneData(postcode,feature_list = None):
-
-    path = "data/data_merged_20250922.parquet"
-    col = None
-    if feature_list is not None:
-        col = ["codecommune"] + feature_list
-
-    sel = [("codecommune","==",str(postcode))]
-    data = pd.read_parquet(path,engine='pyarrow',
-                           columns = col,
-                           filters=sel
-                           )
-
-    return data
+from dataImport import importCommuneData
 
 feature_list = [
     'annee',
     'type',
-    'pvoteppar',
+    # 'pvoteppar',
     # 'pvotepvoteG',
-    # 'pvotepvoteC','pvotepvoteD',
+    # 'pvotepvoteC',
+    'pvotepvoteD',
+
+    'popcommunes/percommu',
+    'popcommunesvbbm/vbbmpauvresriches',
+    'capitalimmobiliercommunes/capitalimmo',
+    # 'revcommunes/nadult',
+    # 'capitalimmobiliercommunes/surface',
     # 'agesexcommunes/perage_rank'
     ]
 
-data = importCommuneData(91100,feature_list).sort_values(by=['type', 'annee'])
+data = importCommuneData(89394,feature_list).sort_values(by=['type', 'annee'])
 data=data[data["type"]==1]
 data=data.drop(columns=["type", 
                         # "codecommune"
                         ])
-
-pd.plotting.autocorrelation_plot(data["pvoteppar"])
-#%%
+y='pvotepvoteD'
+pd.plotting.autocorrelation_plot(data[y])
+data
+#%% Train Test split
+n = len(data)
+train = data.iloc[: 9*n//10].copy()
+test  = data.iloc[9*n//10:].copy()
+#%% Test avec plus de features
 from statsforecast import StatsForecast
 from statsforecast.models import AutoETS,AutoRegressive,AutoARIMA,AutoCES
-from sklearn.model_selection import train_test_split
-n=len(data)
-X_train, X_test =  data[:9*n//10], data[9*n//10:]
-X_train
-#%%
-AutoARIMA()
+
 sf = StatsForecast(
     models=[
-        AutoARIMA(
-    )],
+            AutoARIMA(),
+            AutoRegressive(lags=1,alias="AutoRegLag1"),
+            # AutoRegressive(lags=2,alias="AutoRegLag2"),
+            # AutoRegressive(lags=3,alias="AutoRegLag3"),
+            # AutoRegressive(lags=4,alias="AutoRegLag4"),
+            # AutoRegressive(lags=5,alias="AutoRegLag5"),
+            AutoCES(),
+            AutoETS(),
+            ],
     freq=5
 )
+
+horizon = 4
+level = [95]
 sf.fit(
-    X_train,    
+    train,    
     id_col="codecommune",
     time_col="annee",
-    target_col="pvoteppar"
-    )
-forecast_df = sf.predict(h=5, level=[90])
-sf.plot(X_train, 
-        forecast_df, 
-        level=[90],
-    id_col="codecommune",
-    time_col="annee",
-    target_col="pvoteppar"
-        )
-#%%
-sf.plot(
-    X_train, 
-        X_test, 
-        level=[90],
-    id_col="codecommune",
-    time_col="annee",
-    target_col="pvoteppar"
+    target_col=y
 )
-#%%
-sf.fitted_[0][0].model_
+fcst = sf.forecast(
+    df=train, 
+    h=horizon, 
+    X_df=test.drop(columns=[y]), 
+    level=level,
+    id_col="codecommune",
+    time_col="annee",
+    target_col=y
+)
+sf.plot(
+    data, 
+    fcst, 
+    level=level,
+    id_col="codecommune",
+    time_col="annee",
+    target_col=y
+)
+#%% Display model parameters
+num_model=0
+print(sf.fitted_[0][num_model])
+sf.fitted_[0][num_model].model_
+#%% Test avec MLForecast
+from mlforecast import MLForecast
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from utilsforecast.plotting import plot_series
+
+mlf = MLForecast(
+    models=[
+        make_pipeline(StandardScaler(), LinearRegression()),
+        make_pipeline(StandardScaler(), RandomForestRegressor()),
+        make_pipeline(StandardScaler(), XGBRegressor()),
+            ],
+    freq=5
+)
+
+horizon = 4
+level = [95]
+mlf.fit(
+    train,    
+    id_col="codecommune",
+    time_col="annee",
+    target_col=y,
+    static_features = [],
+)
+fcst = mlf.predict(
+    h=horizon, 
+    X_df=test.drop(columns=[y]), 
+    level=level,
+)
+fig = plot_series(
+    data, 
+    fcst, 
+    max_ids=4, 
+    plot_random=False,
+    id_col="codecommune",
+    time_col="annee",
+    target_col=y,
+    )
+fig
