@@ -1,0 +1,6 @@
+pandas
+pyarrow
+numpy
+python=3.12
+networkx
+matplotlib
