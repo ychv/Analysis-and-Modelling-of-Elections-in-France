@@ -1,3 +1,7 @@
 pandas
 pyarrow
 polars
+dask
+numpy
+networkx
+matplotlib
