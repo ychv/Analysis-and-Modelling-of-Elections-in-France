@@ -120,3 +120,65 @@ def importCommuneData(postcode,feature_list = None): # Create a datapoint for a 
 
 
     # return vect
+
+import dask.dataframe as dd
+import pandas as pd
+from typing import List, Optional
+
+def filter_large_parquet(
+    file_path: str,
+    columns_to_keep: List[str],
+    dropna_subset: Optional[List[str]] = None,
+    npartitions: int = 4
+) -> pd.DataFrame:
+    """
+    Reads a large Parquet file, selects necessary columns, and drops rows
+    with missing values in specified columns, all without loading the
+    entire file into RAM at once using Dask.
+
+    Args:
+        file_path: The path to the Parquet file.
+        columns_to_keep: A list of column names that must be kept in the final DataFrame.
+        dropna_subset: A list of column names to check for NaN/Na values. Rows
+                       where any of these columns are NaN will be dropped.
+                       If None, no rows will be dropped based on NaNs.
+        npartitions: The number of Dask partitions to read the data into.
+                     Adjust this based on your system's core count and data size.
+
+    Returns:
+        A pandas DataFrame containing the filtered and selected data.
+        NOTE: The final output MUST fit into RAM, otherwise, this function
+              should be modified to return the Dask DataFrame for further
+              out-of-core processing.
+    """
+    print(f"Loading Parquet file from: {file_path} with {npartitions} partitions...")
+    all_needed_cols = list(set(columns_to_keep + (dropna_subset if dropna_subset else [])))
+
+    try:
+        ddf = dd.read_parquet(
+            file_path, 
+            columns=all_needed_cols, 
+            split_row_groups=True,
+            npartitions=npartitions
+        )
+        print(f"Initial Dask DataFrame created with {len(ddf.columns)} columns.")
+    except Exception as e:
+        print(f"Error loading Parquet file: {e}")
+        return pd.DataFrame()
+
+    if dropna_subset:
+        print(f"Dropping rows with NaNs in subset: {dropna_subset}")
+        ddf = ddf.dropna(subset=dropna_subset)
+
+    ddf = ddf[columns_to_keep]
+    print(f"Final columns selected: {columns_to_keep}")
+    
+    print("Computing result and converting to a single Pandas DataFrame...")
+    final_df = ddf.compute()
+    
+    print(f"Successfully loaded and filtered. Final DataFrame shape: {final_df.shape}")
+    return final_df
+
+if __name__=="__main__":
+    df=filter_large_parquet(path, ["codecommune", "annee"], ["codecommune", "annee"])
+    print(df)
