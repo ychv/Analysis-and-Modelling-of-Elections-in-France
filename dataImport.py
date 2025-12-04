@@ -1,4 +1,5 @@
 import pandas as pd
+import polars as pl
 
 path = "../Data/data_merged_20250922.parquet" # path to Data file (in repo parent folder)
 
@@ -120,3 +121,31 @@ def importCommuneData(postcode,feature_list = None): # Create a datapoint for a 
 
 
     # return vect
+
+from typing import List, Optional
+
+def filter_large_parquet(
+    file_path: str,
+    columns_to_keep: List[str],
+    dropna_subset: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """
+    Fastest and lightest method: Polars lazy scan of Parquet with
+    predicate pushdown and projection pushdown
+    (only reads the columns and row groups needed).
+    """
+
+    # Lazy scan (does NOT load data)
+    lf = pl.scan_parquet(file_path)
+
+    # Projection pushdown: only load needed columns
+    needed = list(set(columns_to_keep + (dropna_subset or [])))
+    lf = lf.select(needed)
+    if dropna_subset:
+        lf = lf.drop_nulls(subset=dropna_subset)
+    lf = lf.select(columns_to_keep)
+    return lf.collect().to_pandas()
+
+if __name__=="__main__":
+    df=filter_large_parquet(path, ["codecommune", "annee"], ["codecommune", "annee"])
+    print(df)
