@@ -1,15 +1,32 @@
 #%%
 import pandas as pd
-from dataImport import importCommuneData
+from dataImport import importCommuneData, filter_large_parquet
+
+def sample_df(df,num_communes, rdm_seed=42):
+    import random
+    random.seed(rdm_seed)
+    sample=random.sample(list(df["codecommune"].unique()), num_communes)
+    return df[df["codecommune"].isin(sample)].sort_values(by=["codecommune", "annee"])
+
+def select_election_type(df, type:{0,1}=1):
+    df=df[df["type"]==type]
+    df=df.drop(columns=[
+        "type", 
+        # "codecommune"
+    ])
+    return df
 
 feature_list = [
     'annee',
     'type',
 
-    # y:='pvoteppar',
+    y:='pvoteppar',
     # y:='pvotepvoteG',
     # y:='pvotepvoteC',
-    y:='pvotepvoteD',
+    # y:='pvotepvoteD',
+
+    # "lat",
+    # "long",
 
     'popcommunes/pop',
     'popcommuneselecteurs/electeurs',
@@ -28,12 +45,95 @@ feature_list = [
     # 'capitalimmobiliercommunes/surface',
     # 'agesexcommunes/perage_rank'
     ]
+#%%
+from feature_explo import select_no_na_features, get_all_features
 
-data = importCommuneData(89394,feature_list).sort_values(by=['type', 'annee'])
-data=data[data["type"]==1]
-data=data.drop(columns=["type", 
-                        # "codecommune"
-                        ])
+feature_list=select_no_na_features(get_all_features())
+
+feature_list=[
+    'annee',
+    'codecommune',
+
+    y:='pvoteppar',
+    # y:='pvotepvoteC',
+    # y:='pvotepvoteCD',
+    # y:='pvotepvoteCG',
+    # y:='pvotepvoteD',
+    # y:='pvotepvoteG',
+
+    'inscrits',
+    'type',
+    # 'lat',
+    # 'long',
+
+    # 'agesexcommunes/perprop014',
+    # 'agesexcommunes/perprop014_rank',
+    # 'agesexcommunes/perpropf',
+    # 'agesexcommunes/perpropf_rank',
+    # 'agesexcommunes/perprop60p',
+    # 'agesexcommunes/perprop60p_rank',
+    # 'agesexcommunes/perpropf_pctchange',
+    # 'agesexcommunes/perprop014_pctchange',
+    # 'agesexcommunes/perprop60p_delta',
+    # 'agesexcommunes/perprop60p_pctchange',
+    # 'agesexcommunes/perage',
+    # 'agesexcommunes/perage_rank',
+    # 'agesexcommunes/perage_pctchange',
+    # 'agesexcommunes/perprop014_delta',
+    # 'agesexcommunes/perage_delta',
+    # 'agesexcommunes/perpropf_delta',
+
+    'popcommunes/peragglo',
+    'popcommunes/peragglo_delta',
+    'popcommunes/peragglo_rank',
+    'popcommunes/percommu',
+    'popcommunes/percommu_delta',
+    'popcommunes/percommu_rank',
+    'popcommunes/pop',
+    'popcommunes/pop_delta',
+    'popcommunes/pop_rank',
+    'popcommunes/popagglo',
+    'popcommunes/popagglo_delta',
+    'popcommunes/popagglo_rank',
+    # 'popcommunes/peragglo_pctchange',
+    # 'popcommunes/percommu_pctchange',
+    # 'popcommunes/pop_pctchange',
+    # 'popcommunes/popagglo_pctchange',
+    # 'popcommunesvbbm/vbbm',
+    # 'popcommunesvbbm/vbbm_delta',
+    # 'popcommunesvbbm/vbbm_pctchange',
+    # 'popcommunesvbbm/vbbm_rank',
+    # 'popcommunesvbbm/vbbmpauvresriches',
+    # 'popcommunesvbbm/vbbmpauvresriches_pctchange',
+    # 'popcommunesvbbm/vbbmpauvresriches_rank',
+    # 'popcommunesvbbm/vbbmpauvresrichescap',
+    # 'popcommunesvbbm/vbbmpauvresrichescap_pctchange',
+    # 'popcommunesvbbm/vbbmpauvresrichescap_rank',
+    # 'popcommunesvbbm/vbbmpauvresriches_delta',
+    # 'popcommunesvbbm/vbbmpauvresrichescap_delta',
+    # 'popcommuneselecteurs/electeurs',
+    # 'popcommuneselecteurs/electeurs_rank',
+    # 'popcommuneselecteurs/electeurs_delta'
+    # 'popcommuneselecteurs/electeurs_pctchange',
+
+    'pvotepreviousppar',
+    'pvotepreviouspvoteC',
+    'pvotepreviouspvoteCD',
+    'pvotepreviouspvoteCG',
+    'pvotepreviouspvoteD',
+    'pvotepreviouspvoteG',
+    
+    'pvotepreviouspreviousppar',
+    'pvotepreviouspreviouspvoteC',
+    'pvotepreviouspreviouspvoteCD',
+    'pvotepreviouspreviouspvoteCG',
+    'pvotepreviouspreviouspvoteD',
+    'pvotepreviouspreviouspvoteG',
+]
+path = "data/data_merged_20250922.parquet"
+data=filter_large_parquet(path, feature_list)
+data=select_election_type(data, 1)
+data=sample_df(data, 100)
 data
 #%% Test avec MLForecast
 from mlforecast import MLForecast
@@ -47,7 +147,7 @@ from utilsforecast.plotting import plot_series
 
 mlf = MLForecast(
     models=[
-        make_pipeline(LinearRegression()),
+        # make_pipeline(LinearRegression()),
         make_pipeline(RandomForestRegressor(
             n_estimators = 1000,
             criterion = "squared_error",
@@ -61,7 +161,7 @@ mlf = MLForecast(
             bootstrap = True,
             random_state=42
         )),
-        make_pipeline(XGBRegressor()),
+        # make_pipeline(XGBRegressor()),
     ],
     lags=[1,2],
     freq=5,
@@ -73,36 +173,59 @@ mlf.preprocess(
     id_col="codecommune",
     time_col="annee",
     target_col=y,
-    static_features = [],
+    static_features = [
+        # "lat",
+        # "long"
+    ],
 )
 #%%
-horizon = 3
+horizon = 2
 level = [95]
 n = len(data)
-train = data.iloc[: 9*n//10].copy()
-test  = data.iloc[9*n//10:].copy()
-test = test.iloc[:horizon,:]
 
+annees = data["annee"].unique()
+annees.sort()
+
+train = data[data["annee"].isin(annees[:-horizon])]
+test  = data[data["annee"].isin(annees[-horizon:])]
+
+# DROP the communes where some years miss
+future_df = mlf.make_future_dataframe(h=horizon)
+
+merged = future_df.merge(
+    test,
+    on=["annee", "codecommune"],
+    how="outer",
+    indicator=True
+)
+expected_count = future_df["annee"].nunique()
+
+complete_communes = (
+    merged.groupby("codecommune")
+    .size()
+    .loc[lambda x: x == expected_count]
+    .index
+)
+train = train[train["codecommune"].isin(complete_communes)]
+test  = test[test["codecommune"].isin(complete_communes)]
+
+print(train.shape, test.shape)
+#%%
 mlf.fit(
     train,    
     id_col="codecommune",
     time_col="annee",
     target_col=y,
-    static_features = [],
+    static_features = [
+        # "lat",
+        # "long"
+    ],
 )
+
 fcst = mlf.predict(
     h=horizon, 
     X_df=test, 
     level=level,
-)
-fig = plot_series(
-    data, 
-    fcst, 
-    max_ids=4, 
-    plot_random=False,
-    id_col="codecommune",
-    time_col="annee",
-    target_col=y,
 )
 
 print(data[y].describe())
@@ -111,7 +234,18 @@ for model in mlf.models_:
     print("\n____________________________")
     print(f"Model {model}")
     print(f"RMSE : {rmse}")
-fig
+
+# fig = plot_series(
+#     data, 
+#     fcst, 
+#     max_ids=4, 
+#     plot_random=False,
+#     id_col="codecommune",
+#     time_col="annee",
+#     target_col=y,
+# )
+
+# fig
 #%%
 data_stats = data[y].describe().to_dict()
 
