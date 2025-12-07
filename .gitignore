@@ -2,3 +2,7 @@
 */*.npy
 */*.jpg
 */.vscode
+
+data/*
+results/*
+__pycache__
