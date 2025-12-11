@@ -4,4 +4,4 @@
 */.vscode
 /data/*
 /.vscode/*
-
+.DS_STORE
