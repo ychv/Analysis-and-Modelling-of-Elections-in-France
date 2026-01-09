@@ -128,6 +128,7 @@ def filter_large_parquet(
     file_path: str,
     columns_to_keep: List[str],
     dropna_subset: Optional[List[str]] = None,
+    filter: Optional[pl.Expr] = None
 ) -> pd.DataFrame:
     """
     Fastest and lightest method: Polars lazy scan of Parquet with
@@ -143,9 +144,19 @@ def filter_large_parquet(
     lf = lf.select(needed)
     if dropna_subset:
         lf = lf.drop_nulls(subset=dropna_subset)
+    if filter is not None:
+        lf = lf.filter(filter)
     lf = lf.select(columns_to_keep)
     return lf.collect().to_pandas()
 
 if __name__=="__main__":
-    df=filter_large_parquet(path, ["codecommune", "annee"], ["codecommune", "annee"])
+    path = "data/data_merged_20250922.parquet" # path to Data file (in repo parent folder)
+    df=filter_large_parquet(path, 
+        ["codecommune", "annee"],
+        dropna_subset=["codecommune", "annee"],
+        filter=(
+            # pl.col("codecommune") == "75010", 
+            ~pl.col("annee").is_in([2022, 2017, 2012]) # ! on filtre (donc drop) les années qui sont là-dedans
+            )
+    )
     print(df)
