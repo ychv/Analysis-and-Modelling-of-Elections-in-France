@@ -1,0 +1,78 @@
+Nuance,Libellé,Tendance
+
+REM,"Renaissance Soutenue Par La République En Marche, Le Modem Et Ses Partenaires",Centre
+LENS,Ensemble ! (Majorité présidentielle),Centre
+DVC,Parti Fédéraliste Européen - Pour Une Europe Qui Protège Ses Citoyens,Centre
+DVC,Parti Fed. Européen,Centre
+DVC,Les Européens,Centre
+DVC,Envie D'Europe,Centre
+REM,Renaissance,Centre
+
+
+DVD,Union De La Droite Et Du Centre,Centre-droit
+LDD,Liste Divers Droite,Centre-droit
+LUDF,Avec  l'Europe prenons une France d'avance,Centre-droit
+UDF,Avec l'Europe prenons une France d'avance,Centre-droit
+DVD,Union Droite-Centre,Centre-droit
+DIV,Udlef,Centre-droit
+DIV,Udlef (Union Démocratique Pour La Liberté Égalité Fraternité),Centre-droit
+
+MNA,Front national Mouvement national,Droite
+DTE,L'union pour l'Europe l'opposition unie,Droite
+FRN,Front National,Droite
+EXD,Une France Royale Au Coeur De L'Europe,Droite
+LCP,Liste Chasse Pêche,Droite
+RN,"Prenez Le Pouvoir, Liste Soutenue Par Marine Le Pen",Droite
+DLF,Le Courage De Défendre Les Français Avec Nicolas Dupont-Aignan. Debout La France ! - Cnip,Droite
+DSV,"Ensemble Patriotes Et Gilets Jaunes : Pour La France, Sortons De L'Union Européenne !",Droite
+LREC,La France Fiere Menee Par Marion Marechal Et Soutenue Par Éric Zemmour,Droite
+DLF,Debout La France,Droite
+DIV,Prenez Le Pouvoir,Droite
+EXD,Une France Royale,Droite
+DSV,Ensemble Pour Le Frexit,Droite
+EXD,La Ligne Claire,Droite
+DSV,Ensemble Patriotes,Droite
+REC,Liste De La Reconquête,Droite
+
+
+LEC,Les écologistes,Centre-gauche
+VEC,Europe Écologie,Centre-gauche
+ECO,Urgence Écologie,GauCentre-gaucheche
+DVG,Pour L'Europe Des Gens,Centre-gauche
+DVG,Envie D'Europe Écologique Et Sociale,Centre-gauche
+DVG,À Voix Égales,Centre-gauche
+DVG,Liste Citoyenne Du Printemps Européen Avec Benoît Hamon Soutenue Par Génération.S Et Dème-Diem 25,Centre-gauche
+DVG,Pour L'Europe Des Gens Contre L'Europe De L'Argent,Centre-gauche
+GAU,Construisons notre Europe,Centre-gauche
+LPS,Liste « Construisons notre Europe »,Centre-gauche
+LDG,Oui à l'Europe fraternelle,Centre-gauche
+
+LRG,Liste Régionaliste,Gauche
+DVG,Parti Pirate,Gauche
+DVC,Démocratie Représentative,Gauche
+ECO,Parti Animaliste,Gauche
+ECO,Décroissance 2019,Gauche
+EXG,Parti Révolutionnaire Communistes,Gauche
+EXG,Lutte Ouvrière,Gauche
+EXG,"Lutte Ouvrière - Contre Le Grand Capital, Le Camp Des Travailleurs",Gauche
+EXG,Révolutionnaire,Gauche
+LFI,La France Insoumise,Gauche
+
+
+DIV,Pace,
+DIV,Initiative Citoyenne,
+DVG,Allons Enfants,
+DIV,Liste Citoyenne,
+DIV,Neutre Et Actif,
+DIV,Esperanto,
+DVC,Évolution Citoyenne,
+LGJ,Alliance Jaune,
+DVG,Les Oublies De L'Europe,
+DSV,Europe Au Service Peuples,
+DIV,Pace - Parti Des Citoyens Européens,
+DIV,Mouvement Pour L'Initiative Citoyenne,
+DIV,Espéranto - Langue Commune Équitable Pour L'Europe,
+LGJ,"Alliance Jaune, La Révolte Par Le Vote",
+DVG,"Les Oubliés De L'Europe - Artisans, Commerçants, Professions Libérales Et Indépendants - Acpli -",
+DSV,Une Europe Au Service Des Peuples,
+LDIV,Liste Divers,
