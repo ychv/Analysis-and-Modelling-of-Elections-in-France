@@ -1,3 +1,4 @@
 pandas
 pyarrow
 polars
+scikit-learn<1.6.0
