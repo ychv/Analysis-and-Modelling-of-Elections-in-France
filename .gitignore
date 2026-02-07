@@ -178,3 +178,11 @@ cython_debug/
 #  Cursor is an AI-powered code editor.`.cursorignore` specifies files/directories to #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+.DS_Store
+data/.DS_Store
+data/projet 3A/*
+data/pres2022_csv/*
+data/data_eco_soc_no_nan.pkl 
+data/data_merged_20250922.parquet
+data/data_no_na.pkl 
