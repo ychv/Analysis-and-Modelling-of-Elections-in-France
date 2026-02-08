@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
+from sklearn.base import clone, BaseEstimator
 from sklearn.model_selection import train_test_split, GridSearchCV, KFold
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.inspection import permutation_importance
 from src.config import random_seed
 
 
-class RegressorWrapper:
+class RegressorWrapper(BaseEstimator):
     """
     A wrapper for scikit-learn compatible regressors.
     Works with RandomForest, ObliqueRandomForest, etc.
@@ -25,6 +25,14 @@ class RegressorWrapper:
         self.params = params
         self.model = self.base(**self.params)
 
+    def __str__(self):
+        """Used by TimeSeriesWrapper to set the key in MLForecast."""
+        return self.base.__name__ if self.base else "UninitializedModel"
+
+    def __repr__(self):
+        """Standard sklearn-style representation."""
+        return f"{self.__str__()}({self.params})"
+    
     def fit(self, X, y):
         """
         Resets and fits the model on provided data.
@@ -49,6 +57,55 @@ class RegressorWrapper:
             - y, ndarray of shape (n_samples,) or (n_samples, n_outputs)
         """
         return self.model.predict(X)
+
+    def compute_permutation_importance(
+        self,
+        X_test: pd.DataFrame | np.ndarray,
+        y_test: pd.Series | np.ndarray,
+        random_state: int,
+        perm_n_repeats: int,
+        perm_scoring: str,
+    ) -> pd.DataFrame:
+        """
+        Calculates permutation importance for the current fitted model.
+
+        This technique measures the contribution of each feature by calculating the 
+        decrease in model performance when a single feature's values are randomly shuffled.
+
+        Args:
+            X_test (Union[pd.DataFrame, np.ndarray]): Testing features of shape (n_samples, n_features).
+            y_test (Union[pd.Series, np.ndarray]): Testing target labels of shape (n_samples,).
+            random_state (int): Seed for the random number generator to ensure reproducible results.
+            perm_n_repeats (int): Number of times to permute each feature.
+            perm_scoring (str): Scikit-learn scoring string (e.g., 'r2', 'neg_mean_squared_error').
+
+        Returns:
+            pd.DataFrame: A DataFrame sorted by importance, containing:
+                - 'feature': Feature name or index.
+                - 'importance_mean': Average decrease in score across repeats.
+                - 'importance_std': Standard deviation of the decrease in score.
+        """
+        
+        perm = permutation_importance(
+            self.model,
+            X_test,
+            y_test,
+            n_repeats=perm_n_repeats,
+            random_state=random_state,
+            n_jobs=self.params.get("n_jobs", -1),
+            scoring=perm_scoring,
+        )
+
+        pi = pd.DataFrame(
+            {
+                "feature": (
+                    X_test.columns if hasattr(X_test, "columns") else np.arange(X_test.shape[1])
+                ),
+                "importance_mean": perm.importances_mean,
+                "importance_std": perm.importances_std,
+            }
+        ).sort_values("importance_mean", ascending=False)
+        return pi
 
     def train_test_with_permutation_importance(
         self,
@@ -83,27 +140,16 @@ class RegressorWrapper:
         print(f"R2: {r2:.4f} | RMSE: {rmse:.4f}")
         print(f"y_test Std: {np.std(y_test):.3f} | Mean: {np.mean(y_test):.3f}")
 
-        perm = permutation_importance(
-            self.model,
+        pi = self.compute_permutation_importance(
             X_test,
             y_test,
-            n_repeats=perm_n_repeats,
             random_state=random_state,
-            n_jobs=self.params.get("n_jobs", -1),
-            scoring=perm_scoring,
+            perm_n_repeats=perm_n_repeats,
+            perm_scoring=perm_scoring,
         )
 
-        pi = pd.DataFrame(
-            {
-                "feature": (
-                    X.columns if hasattr(X, "columns") else np.arange(X.shape[1])
-                ),
-                "importance_mean": perm.importances_mean,
-                "importance_std": perm.importances_std,
-            }
-        ).sort_values("importance_mean", ascending=False)
-
         return self.model, pi, {"r2": float(r2), "rmse": float(rmse)}
+
 
     def tune_cv_hyperparams(
         self,
