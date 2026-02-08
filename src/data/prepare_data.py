@@ -12,7 +12,7 @@ def data_loader(path: str, starting_year: int) -> pd.DataFrame:
     Returns pd.DataFrame.
     """
     df = pd.read_parquet(
-        path, engine="pyarrow", filters=[("Annee", ">", starting_year)]
+        path, engine="pyarrow", filters=[("annee", ">", starting_year)]
     )
 
     return df
