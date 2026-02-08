@@ -2,6 +2,9 @@
 */*.npy
 */*.jpg
 */.vscode
+*.twbr
+*.twb
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
