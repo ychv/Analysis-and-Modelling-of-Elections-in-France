@@ -1,4 +1,7 @@
 import pandas as pd
+import random
+import numpy as np
+from typing import Tuple
 
 
 def data_loader(path: str, starting_year: int) -> pd.DataFrame:
@@ -38,3 +41,44 @@ def prepare_data(df: pd.DataFrame, threshold: float, type: int) -> pd.DataFrame:
     df_output_filtered = df_output[cols_to_keep]
 
     return df_output_filtered
+
+def sample_df(df: pd.DataFrame, num_communes: int) -> pd.DataFrame:
+    """
+    Randomly samples a specified number of unique communes and returns their full history.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame containing a 'codecommune' column.
+        num_communes (int): The number of unique communes to sample.
+
+    Returns:
+        pd.DataFrame: A filtered DataFrame containing only the sampled communes, 
+            sorted by commune code and year.
+    """
+    sample=random.sample(list(df["codecommune"].unique()), num_communes)
+    return df[df["codecommune"].isin(sample)].sort_values(by=["codecommune", "annee"])
+
+def split_serie_temp(data: pd.DataFrame, horizon: int) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
+    """
+    Splits a time-series dataset into training and testing sets based on election years.
+
+    Args:
+        data (pd.DataFrame): The input DataFrame containing an 'annee' (year) column.
+        horizon (int): The number of most recent election years to include in the test set.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]: A tuple containing:
+            - train (pd.DataFrame): Data from all years except the last 'horizon' years.
+            - test (pd.DataFrame): Data from the last 'horizon' years.
+            - years (np.ndarray): A sorted array of all unique years in the original data.
+
+    Raises:
+        ValueError: If the number of unique years in the data is less than or equal to the horizon.
+    """
+    years = np.sort(data["annee"].unique())
+    if len(years) <= horizon:
+        raise ValueError("Not enough elections in the selected period for horizon h.")
+    train_years = years[:-horizon]
+    test_years = years[-horizon:]
+    train = data[data["annee"].isin(train_years)].copy()
+    test = data[data["annee"].isin(test_years)].copy()
+    return train, test, years
