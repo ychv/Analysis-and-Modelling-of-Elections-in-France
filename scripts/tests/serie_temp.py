@@ -8,8 +8,9 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from src.data.data_utils import filter_large_parquet
-from src.config import full_dataset_path
-from src.data.prepare_data import sample_df, split_serie_temp, prepare_data
+from src.config import full_dataset_path, random_seed
+from src.data.prepare_data import sample_df, split_serie_temp, prepare_data, get_display_window_lagged
+from src.data.prepare_data import create_election_mapping, apply_time_mapping, calculate_election_duration
 from src.model.models_rf import RegressorWrapper
 from src.model.serie_temp import TimeSeriesWrapper
 
@@ -18,18 +19,24 @@ from config import static_features, id_col, time_col, y
 from config import model, params, lags, freq, target_transforms
 
 import polars as pl
-#Fetch then prepare data
-data=filter_large_parquet(
+
+extended_start_year=get_display_window_lagged(full_dataset_path, year_start, year_end, lags)
+
+# Charger les données avec la borne étendue
+data = filter_large_parquet(
     file_path=full_dataset_path, 
     columns_to_keep=feature_list,
     dropna_subset=feature_list,
-    filter=pl.col("annee").is_between(year_start, year_end)
-
+    filter=pl.col("annee").is_between(extended_start_year, year_end)
 )
 
-data=sample_df(data, num_communes)
+data=sample_df(data, num_communes, random_seed)
 data=prepare_data(data, 0, election_type)
-train, test, _ = split_serie_temp(data, horizon=horizon)
+data= calculate_election_duration(data, time_col, id_col)
+train, test, years = split_serie_temp(data, horizon=horizon)
+# We use mapping with time difference instead of just time because elections don't happen regularly (ex : 1981, 1986, 1988)
+year_to_idx, idx_to_year = create_election_mapping(years)
+train, test = apply_time_mapping(train, time_col, year_to_idx), apply_time_mapping(test, time_col, year_to_idx)
 
 #Define then fit model
 mlf = TimeSeriesWrapper(
@@ -55,4 +62,6 @@ mlf.fit(train,dropna=False)
 
 fcst=mlf.run_forecast(test, horizon)
 
-comparison_df=mlf.evaluate_performance(test)
+cv_rmse = mlf.get_cv_rmse(train, window_size=2, dropna=False)
+
+comparison_df=mlf.evaluate_performance(test, idx_to_year, cv_rmse)
