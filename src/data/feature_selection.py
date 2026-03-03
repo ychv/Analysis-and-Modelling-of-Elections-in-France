@@ -58,17 +58,24 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
 
         Performs MI based selection first then VIF based selection on remaining features.
         """
-        X_df = X.select_dtypes(include=[np.number]).fillna(X.median())
 
-        X_s = X_df.sample(min(len(X_df), 50000), random_state=42)
-        y_s = y.loc[X_s.index]
+        X_df = X.select_dtypes(include=[np.number])
+        X_df = X_df.fillna(X_df.median())
+        X_df = X_df.fillna(0)
 
-        print("Computing Mutual information: ")
+        idx = X_df.sample(min(len(X_df), 50000), random_state=random_seed).index
+        X_s = X_df.loc[idx]
+        y_s = y.loc[idx]
 
-        def get_mi(col):
+        # Mutual Information
+        print(f"Calcul MI sur {len(X_df.columns)} colonnes...")
+
+        def get_mi(col_name):
+            x_val = X_s[col_name].values.reshape(-1, 1)
+            y_val = y_s.values.ravel()
             return (
-                col,
-                mutual_info_regression(X_s[[col]], y_s, random_state=random_seed)[0],
+                col_name,
+                mutual_info_regression(x_val, y_val, random_state=random_seed)[0],
             )
 
         mi_results = Parallel(n_jobs=self.n_jobs)(
@@ -77,29 +84,28 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
         mi_df = pd.DataFrame(mi_results, columns=["f", "score"]).sort_values(
             "score", ascending=False
         )
-
         current_cols = mi_df.head(self.n_mi)["f"].tolist()
 
-        print("Computing VIF: ")
-        while True:
-            X_vif = X_s[current_cols].values
+        # VIF récursif
+        print(f"Filtrage VIF sur {len(current_cols)} colonnes...")
+        while len(current_cols) > 1:
+            X_vif_vals = X_s[current_cols].values
 
-            def get_vif(i):
-                y_v = X_vif[:, i]
-                X_v = np.delete(X_vif, i, axis=1)
-                r2 = LinearRegression().fit(X_v, y_v).score(X_v, y_v)
+            def compute_vif(i):
+                target = X_vif_vals[:, i]
+                features = np.delete(X_vif_vals, i, axis=1)
+                r2 = LinearRegression().fit(features, target).score(features, target)
                 return 1.0 / (1.0 - r2) if r2 < 1.0 else float("inf")
 
             vifs = Parallel(n_jobs=self.n_jobs)(
-                delayed(get_vif)(i) for i in range(len(current_cols))
+                delayed(compute_vif)(i) for i in range(len(current_cols))
             )
 
             max_vif = max(vifs)
-            if max_vif <= self.vif_limit or len(current_cols) <= 1:
+            if max_vif <= self.vif_limit:
                 break
 
-            dropped = current_cols.pop(np.argmax(vifs))
-            print(f"Suppression de {dropped} (VIF: {max_vif:.2f})")
+            current_cols.pop(np.argmax(vifs))
 
         self.selected_features = current_cols
         return self

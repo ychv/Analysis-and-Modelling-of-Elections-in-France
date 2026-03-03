@@ -55,7 +55,7 @@ class RegressorWrapper:
         X,
         y,
         test_size=0.15,
-        random_state=42,
+        random_state=random_seed,
         perm_n_repeats=15,
         perm_scoring="r2",
     ):
