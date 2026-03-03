@@ -4,9 +4,11 @@ from typing import Optional, List
 from src.config import full_dataset_path
 
 
-def get_all_years(file_path: str):
-    return sorted(
-        pl.scan_parquet(file_path)
+def get_all_years(file_path: str, election_type: int | None):
+    scan=pl.scan_parquet(file_path)
+    if election_type:
+        scan=scan.filter(pl.col("type") == election_type)
+    return sorted(scan
             .select("annee")
             .unique()
             .collect()["annee"]
