@@ -1,0 +1,125 @@
+N=2000 communes
+
+lucas@youbountou:~/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France$ /home/lucas/.pyenv/versions/projet/bin/python /home/lucas/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France/scripts/tests/serie_temp.py
+Fenêtre d'analyse : 1988 à 2017
+Chargement avec historique pour lags : 1986 à 2017
+Dropped 231 communes due to missing election years.
+Statistiques de la variable cible (pvotepvoteD) :
+count    8845.000000
+mean        0.138995
+std         0.076898
+min         0.000000
+25%         0.079627
+50%         0.128440
+75%         0.185567
+max         0.695371
+Name: pvotepvoteD, dtype: float64
+
+==================================================
+ ANALYSE DU MODÈLE : RandomForestRegressor 
+==================================================
+RMSE over elections [1986, 1988, 1993]: 0.051648794584598035
+
+Métriques par année :
+           RMSE        R2       MAE  N_Samples
+annee                                         
+1997   0.050614  0.452919  0.039050     1769.0
+2002   0.070177 -0.242910  0.056852     1769.0
+2007   0.134427 -8.333420  0.122557     1769.0
+2012   0.094417 -0.905141  0.076290     1769.0
+2017   0.101773 -0.476471  0.081889     1769.0
+
+GLOBAL -> RMSE: 0.0947 | R2: -0.5164
+
+
+
+lucas@youbountou:~/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France$ /home/lucas/.pyenv/versions/projet/bin/python /home/lucas/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France/scripts/tests/serie_temp.py
+Fenêtre d'analyse : 1988 à 2017
+Chargement avec historique pour lags : 1986 à 2017
+Dropped 231 communes due to missing election years.
+Statistiques de la variable cible (pvotepvoteD) :
+count    7076.000000
+mean        0.137292
+std         0.078781
+min         0.000000
+25%         0.076764
+50%         0.125000
+75%         0.184659
+max         0.695371
+Name: pvotepvoteD, dtype: float64
+
+==================================================
+ ANALYSE DU MODÈLE : RandomForestRegressor 
+==================================================
+RMSE over elections [1986, 1988, 1993, 1997]: 0.05632028077531741
+
+Métriques par année :
+           RMSE        R2       MAE  N_Samples
+annee                                         
+2002   0.052881  0.294243  0.042745     1769.0
+2007   0.117802 -6.167583  0.106800     1769.0
+2012   0.064256  0.117631  0.051750     1769.0
+2017   0.079105  0.107991  0.062115     1769.0
+
+GLOBAL -> RMSE: 0.0822 | R2: -0.0902
+
+
+
+lucas@youbountou:~/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France$ /home/lucas/.pyenv/versions/projet/bin/python /home/lucas/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France/scripts/tests/serie_temp.py
+Fenêtre d'analyse : 1988 à 2017
+Chargement avec historique pour lags : 1986 à 2017
+Dropped 231 communes due to missing election years.
+Statistiques de la variable cible (pvotepvoteD) :
+count    5307.000000
+mean        0.136792
+std         0.083388
+min         0.000000
+25%         0.071360
+50%         0.121212
+75%         0.187890
+max         0.695371
+Name: pvotepvoteD, dtype: float64
+
+==================================================
+ ANALYSE DU MODÈLE : RandomForestRegressor 
+==================================================
+RMSE over elections [1986, 1988, 1993, 1997, 2002]: 0.05179498107737638
+
+Métriques par année :
+           RMSE        R2       MAE  N_Samples
+annee                                         
+2007   0.088010 -3.000653  0.077156     1769.0
+2012   0.053363  0.391441  0.040999     1769.0
+2017   0.081295  0.057933  0.061080     1769.0
+
+GLOBAL -> RMSE: 0.0757 | R2: 0.1752
+
+
+
+lucas@youbountou:~/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France$ /home/lucas/.pyenv/versions/projet/bin/python /home/lucas/Documents/Projet/Analysis-and-Modeling-of-Elections-in-France/scripts/tests/serie_temp.py
+Fenêtre d'analyse : 1988 à 2017
+Chargement avec historique pour lags : 1986 à 2017
+Dropped 231 communes due to missing election years.
+Statistiques de la variable cible (pvotepvoteD) :
+count    3538.000000
+mean        0.170247
+std         0.078130
+min         0.000000
+25%         0.111572
+50%         0.158754
+75%         0.217335
+max         0.537500
+Name: pvotepvoteD, dtype: float64
+
+==================================================
+ ANALYSE DU MODÈLE : RandomForestRegressor 
+==================================================
+RMSE over elections [1986, 1988, 1993, 1997, 2002, 2007]: 0.07234907686445516
+
+Métriques par année :
+           RMSE        R2       MAE  N_Samples
+annee                                         
+2012   0.085893 -0.576675  0.068063     1769.0
+2017   0.120089 -1.055710  0.095520     1769.0
+
+GLOBAL -> RMSE: 0.1044 | R2: -0.7860

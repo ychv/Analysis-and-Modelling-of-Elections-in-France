@@ -26,7 +26,7 @@ extended_start_year=get_display_window_lagged(full_dataset_path, election_type, 
 data = filter_large_parquet(
     file_path=full_dataset_path, 
     columns_to_keep=feature_list,
-    dropna_subset=feature_list,
+    dropna_subset=[y],
     filter=(pl.col("annee").is_between(extended_start_year, year_end), pl.col("type") == election_type)
 )
 
@@ -37,6 +37,7 @@ data= calculate_election_duration(data, time_col, id_col)
 train, test, years = split_serie_temp(data, horizon=horizon)
 # We use mapping with time difference instead of just time because elections don't happen regularly (ex : 1981, 1986, 1988)
 year_to_idx, idx_to_year = create_election_mapping(years)
+print(year_to_idx)
 train, test = apply_time_mapping(train, time_col, year_to_idx), apply_time_mapping(test, time_col, year_to_idx)
 
 #Define then fit model
@@ -66,3 +67,6 @@ fcst=mlf.run_forecast(test, horizon)
 cv_rmse = mlf.get_cv_rmse(train, window_size=2, dropna=False)
 
 comparison_df=mlf.evaluate_performance(test, idx_to_year, cv_rmse)
+
+path=f"results/models/{year_start}_2_{year_end}_h{horizon}_el{election_type}_nco{num_communes}"
+mlf.mlf.save(path)

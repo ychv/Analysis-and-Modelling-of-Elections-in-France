@@ -1,0 +1,50 @@
+Théorie du réalignement électoral (sciences politiques, Pierre Martin) : les règles du jeu électoral changent au cours du temps. Elle propose de décrire l’histoire politique des démocraties représentatives comme une succession de « périodes de politique ordinaire » entrecoupées par des « phases de réalignement » - passage brutal d’un « ordre électoral » à un autre, la notion d’ordre électoral faisant référence à une structure d’enjeux stable et durable qui façonne les relations entre les partis et le comportement des électeurs.
+
+Phases de réalignement identifiées : 
+- 1870-1877, 
+- 1893-1902, 
+- 1936-1947, 
+- 1958-1962, 
+- 1981-1984, 
+- 2007-2012 : stratégie de droitisation de Nicolas Sarkozy, qui débouche sur un rapprochement des électorats de l’UMP et du FN 
+- 2017-2019 : recul de la gauche, la seconde percée du FN, l’effondrement du PS, la poussée de LREM et enfin l’effondrement de LR
+
+Hypothèse : Les résultats électoraux d'un passé avec des enjeux différents dégradent les prédictions futures. Si on a un modèle qui marche bien, on devrait ne pas pouvoir prédire correctement les phases de réalignement, puisque ça ne dépend pas que du passé mais aussi d'évènements extérieurs aux données.
+
+Autre idée de méthodo : construire un modèle sur chacune des phases de politique ordinaire et essayer de prédire sur sa phase de réalignement + les autres phases de politique ordinaire avec
+_____________________________________________________________________________________________
+Legislatives :
+1848, 1849, O
+1871, 1876, R
+
+1881, 1885, 1889, O
+1893, 1898, 1902, R
+
+1906, 1910, 1914, 1919, 1924, 1928, 1932, O
+1936, 1945, 1946, R
+
+1951, 1956, O
+1958, 1962, R
+
+1967, 1968, 1973, 1978, O
+1981, R
+
+1986, 1988, 1993, 1997, 2002, O
+2007, 2012, R
+2017, R'
+2022, (?)
+_____________________________________________________________________________________________
+Stratégies d'entrainement : 
+
+Strats en termes de lags : 0 ; 1 lag
+
+Train 1962 + 1967
+
+On vérifie qu'on a des trucs cohérents avec globalement des erreurs qui montent sur 2007-2012
+- Train 1986 + 1988 | Test 1993 + 1997 + 2002 + 2007 + 2012 + 2017 (Peux pas cross val avec 2)
+- Train 1986 + 1988 + 1993 | Test 1997 + 2002 + 2007 + 2012 + 2017
+- Train 1986 + 1988 + 1993 + 1997 | Test 2002 + 2007 + 2012 + 2017
+- Train 1986 + 1988 + 1993 + 1997 + 2002 | Test 2007 + 2012 + 2017 (Le bruit et l'odeur de Chirac commencent le réalignement plutôt que Sarko 5 ans plus tard ?)
+
+
+- Train 2012 | Test 2017 + 2022
