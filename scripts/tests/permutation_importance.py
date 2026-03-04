@@ -20,18 +20,19 @@ from config import model, params, lags, freq, target_transforms
 
 import polars as pl
 
-extended_start_year=get_display_window_lagged(full_dataset_path, year_start, year_end, lags)
+extended_start_year=get_display_window_lagged(full_dataset_path, election_type, year_start, year_end, lags)
 
 # Charger les données avec la borne étendue
 data = filter_large_parquet(
     file_path=full_dataset_path, 
     columns_to_keep=feature_list,
     dropna_subset=feature_list,
-    filter=pl.col("annee").is_between(extended_start_year, year_end)
+    filter=(pl.col("annee").is_between(extended_start_year, year_end), pl.col("type") == election_type)
 )
 
-data=sample_df(data, num_communes, random_seed)
-data=prepare_data(data, 0, election_type)
+if num_communes>0:
+    data=sample_df(data, num_communes, random_seed)
+
 data= calculate_election_duration(data, time_col, id_col)
 train, test, years = split_serie_temp(data, horizon=horizon)
 # We use mapping with time difference instead of just time because elections don't happen regularly (ex : 1981, 1986, 1988)

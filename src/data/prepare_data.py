@@ -154,11 +154,11 @@ def calculate_election_duration(df: pd.DataFrame, time_col: str, id_col: str) ->
     
     return df
 
-def get_display_window_lagged(full_dataset_path:str, year_start:int, year_end:int, lags:list[int]) -> int:
+def get_display_window_lagged(full_dataset_path:str, election_type:int|None, year_start:int, year_end:int, lags:list[int]) -> int:
     """
     Get and display the exact start year to be able to compute lags afterwards.
     """
-    all_available_years = get_all_years(full_dataset_path)
+    all_available_years = get_all_years(full_dataset_path, election_type)
 
     # Trouver l'index de l'année de départ
     start_idx = all_available_years.index(year_start)
