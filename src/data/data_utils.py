@@ -4,6 +4,15 @@ from typing import Optional, List
 from src.config import full_dataset_path
 
 
+def get_all_years(file_path: str):
+    return sorted(
+        pl.scan_parquet(file_path)
+            .select("annee")
+            .unique()
+            .collect()["annee"]
+            .to_list()
+    )
+
 def filter_large_parquet(
     file_path: str,
     columns_to_keep: list[str],

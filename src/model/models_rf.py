@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
-from sklearn.model_selection import train_test_split, GridSearchCV, KFold
+from sklearn.base import clone, BaseEstimator
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.inspection import permutation_importance
-from src.config import random_seed
+from src.config import random_seed, workers
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 
 
-class RegressorWrapper:
+class RegressorWrapper(BaseEstimator):
     """
     A wrapper for scikit-learn compatible regressors.
     Works with RandomForest, ObliqueRandomForest, etc.
@@ -24,6 +24,14 @@ class RegressorWrapper:
         self.base = base
         self.params = params
         self.model = self.base(**self.params)
+
+    def __str__(self):
+        """Used by TimeSeriesWrapper to set the key in MLForecast."""
+        return self.base.__name__ if self.base else "UninitializedModel"
+
+    def __repr__(self):
+        """Standard sklearn-style representation."""
+        return f"{self.__str__()}({self.params})"
 
     def fit(self, X, y):
         """
@@ -50,38 +58,33 @@ class RegressorWrapper:
         """
         return self.model.predict(X)
 
-    def train_test_with_permutation_importance(
+    def compute_permutation_importance(
         self,
-        X,
-        y,
-        test_size=0.15,
-        random_state=random_seed,
-        perm_n_repeats=15,
-        perm_scoring="r2",
-    ):
+        X_test: pd.DataFrame | np.ndarray,
+        y_test: pd.Series | np.ndarray,
+        random_state: int,
+        perm_n_repeats: int,
+        perm_scoring: str,
+    ) -> pd.DataFrame:
         """
-        Splits provided dataset (X, y) into test and train sub datasets.
-        Fits on the train then evaluates performance on test data.
-        Also performs permutation importance onto the data's features.
+        Calculates permutation importance for the current fitted model.
 
-        Returns trained model, permuation importance and test performance metrics.
+        This technique measures the contribution of each feature by calculating the
+        decrease in model performance when a single feature's values are randomly shuffled.
+
+        Args:
+            X_test (Union[pd.DataFrame, np.ndarray]): Testing features of shape (n_samples, n_features).
+            y_test (Union[pd.Series, np.ndarray]): Testing target labels of shape (n_samples,).
+            random_state (int): Seed for the random number generator to ensure reproducible results.
+            perm_n_repeats (int): Number of times to permute each feature.
+            perm_scoring (str): Scikit-learn scoring string (e.g., 'r2', 'neg_mean_squared_error').
+
+        Returns:
+            pd.DataFrame: A DataFrame sorted by importance, containing:
+                - 'feature': Feature name or index.
+                - 'importance_mean': Average decrease in score across repeats.
+                - 'importance_std': Standard deviation of the decrease in score.
         """
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state
-        )
-
-        # Update random state if the model supports it
-        if "random_state" in self.params:
-            self.params["random_state"] = random_state
-
-        self.fit(X_train, y_train)
-        y_pred = self.predict(X_test)
-
-        r2 = r2_score(y_test, y_pred)
-        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-
-        print(f"R2: {r2:.4f} | RMSE: {rmse:.4f}")
-        print(f"y_test Std: {np.std(y_test):.3f} | Mean: {np.mean(y_test):.3f}")
 
         perm = permutation_importance(
             self.model,
@@ -89,21 +92,28 @@ class RegressorWrapper:
             y_test,
             n_repeats=perm_n_repeats,
             random_state=random_state,
-            n_jobs=self.params.get("n_jobs", -1),
+            n_jobs=self.params.get("n_jobs", int(np.ceil(workers / 2))),
             scoring=perm_scoring,
         )
 
         pi = pd.DataFrame(
             {
                 "feature": (
-                    X.columns if hasattr(X, "columns") else np.arange(X.shape[1])
+                    X_test.columns
+                    if hasattr(X_test, "columns")
+                    else np.arange(X_test.shape[1])
                 ),
                 "importance_mean": perm.importances_mean,
                 "importance_std": perm.importances_std,
             }
         ).sort_values("importance_mean", ascending=False)
+        y_pred = self.predict(X_test)
+        r2 = r2_score(y_test, y_pred)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        print(f"R2: {r2:.4f} | RMSE: {rmse:.4f}")
+        print(f"y_test Std: {np.std(y_test):.3f} | Mean: {np.mean(y_test):.3f}")
 
-        return self.model, pi, {"r2": float(r2), "rmse": float(rmse)}
+        return pi, {"r2": float(r2), "rmse": float(rmse)}
 
     def tune_cv_hyperparams(
         self,
@@ -112,34 +122,23 @@ class RegressorWrapper:
         param_grid,
         cv_splits=5,
         scoring="r2",
-        random_state=random_seed,
-        verbose=1,
+        verbose=0,
         refit=True,
     ):
         """
-        Regular GrisSearch tuning.
-
-        Inputs:
-            - X, pd.DataFrame corresponding to (n_samples, n_features)
-            - y, pd.Series corresponding to the taget (n_samples, )
-            - param_grid, dict, corresponds to the base model params to be optimized
-            - cv_split, int, number of cross validation splits.
-            - scoring: str, metric used in param selection
-
-
-        Returns:
-            - Tuple: best_estimator, results of tuning, best params found, best score during tuning.
+        Time-Series aware GridSearch tuning.
+        Note: random_state is removed from cv as TimeSeriesSplit does not shuffle.
         """
         base_instance = self.base(**self.params)
 
-        cv = KFold(n_splits=cv_splits, shuffle=True, random_state=random_state)
+        cv = TimeSeriesSplit(n_splits=cv_splits)
 
         gs = GridSearchCV(
             estimator=base_instance,
             param_grid=param_grid,
             scoring=scoring,
             cv=cv,
-            n_jobs=self.params.get("n_jobs", -1),
+            n_jobs=self.params.get("n_jobs", workers),
             verbose=verbose,
             refit=refit,
         )
