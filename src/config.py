@@ -55,7 +55,15 @@ vote_features = [
     "pvotepreviouspreviouspvoteCD",
 ]
 
-cols_to_keep = ["codecommune, annee"]
+cols_to_keep = ["codecommune", "annee"]
 
 
 ### Model config
+test_size = 0.15
+param_grid_rf = {
+    "n_estimators": [300, 400, 900, 1500],
+    "max_depth": [None],
+    "min_samples_split": [1, 2, 5],
+    "max_features": ["sqrt", "log2"],
+}
+workers = 6
