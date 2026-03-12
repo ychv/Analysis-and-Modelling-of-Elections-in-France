@@ -4,8 +4,8 @@ from sklearn.ensemble import RandomForestRegressor
 
 id_col="codecommune" #"series_id"
 time_col="annee" #"step"
-horizon=1
-num_communes=100
+horizon=1 # can be negative # Example: years=[86, 88, 93, 99], h=-2 -> test=[86, 88], train=[93, 99]
+num_communes=100 # can be negative to run over all available communes
 election_type=type_legis
 year_start=2012
 year_end=2022
