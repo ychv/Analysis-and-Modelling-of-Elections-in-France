@@ -13,6 +13,7 @@ from src.data.prepare_data import sample_df, split_serie_temp, prepare_data, get
 from src.data.prepare_data import create_election_mapping, apply_time_mapping, calculate_election_duration
 from src.model.models_rf import RegressorWrapper
 from src.model.serie_temp import TimeSeriesWrapper
+from mlforecast import MLForecast
 
 from config import feature_list, horizon, num_communes, election_type, year_start, year_end
 from config import static_features, id_col, time_col, y
@@ -26,7 +27,7 @@ extended_start_year=get_display_window_lagged(full_dataset_path, election_type, 
 data = filter_large_parquet(
     file_path=full_dataset_path, 
     columns_to_keep=feature_list,
-    dropna_subset=feature_list,
+    dropna_subset=[y],
     filter=(pl.col("annee").is_between(extended_start_year, year_end), pl.col("type") == election_type)
 )
 
@@ -34,7 +35,8 @@ if num_communes>0:
     data=sample_df(data, num_communes, random_seed)
 
 data= calculate_election_duration(data, time_col, id_col)
-train, test, years = split_serie_temp(data, horizon=horizon)
+train, test, train_years, test_years = split_serie_temp(data, horizon=horizon)
+years=list(train_years) + list(test_years)
 # We use mapping with time difference instead of just time because elections don't happen regularly (ex : 1981, 1986, 1988)
 year_to_idx, idx_to_year = create_election_mapping(years)
 train, test = apply_time_mapping(train, time_col, year_to_idx), apply_time_mapping(test, time_col, year_to_idx)
@@ -49,19 +51,26 @@ mlf = TimeSeriesWrapper(
 
 # CHANGE IMPORTS IF YOU NEED MORE MODELS
 # from config import model2, params2
-mlf.setup_mlf(
-    wrapped_models=[
-        RegressorWrapper(model,**params),
-        # RegressorWrapper(model2,**params2), #ADD more models if needed
-    ],
-    lags=lags,
-    freq=freq,
-    target_transforms=target_transforms,
-)
+path=Path(f"results/models/{train_years[0]}_2_{train_years[-1]}_h{abs(horizon)}_el{election_type}_nco{num_communes}")
+if list(path.glob("*.pkl"))!=[]:
+    mlf.mlf=MLForecast.load(path)
+    print('Model Loaded')
+else:
+    mlf.setup_mlf(
+        wrapped_models=[
+            RegressorWrapper(model,**params),
+            # RegressorWrapper(model2,**params2), #ADD more models if needed
+        ],
+        lags=lags,
+        freq=freq,
+        target_transforms=target_transforms,
+    )
+    loaded=False
+    mlf.fit(train,dropna=False)
+    mlf.mlf.save(path)
+    print("Model Trained")
 
-mlf.fit(train,dropna=False)
-
-fcst=mlf.run_forecast(test, horizon)
+fcst=mlf.run_forecast(test, abs(horizon))
 
 cv_rmse = mlf.get_cv_rmse(train, window_size=2, dropna=False)
 

@@ -77,30 +77,18 @@ def sample_df(df: pd.DataFrame, num_communes: int, random_seed:int) -> pd.DataFr
 
 def split_serie_temp(data: pd.DataFrame, horizon: int) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
     """
-    Splits a time-series dataset into training and testing sets based on election years.
-
-    Args:
-        data (pd.DataFrame): The input DataFrame containing an 'annee' (year) column.
-        horizon (int): The number of most recent election years to include in the test set.
-
-    Returns:
-        Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]: A tuple containing:
-            - train (pd.DataFrame): Data from all years except the last 'horizon' years.
-            - test (pd.DataFrame): Data from the last 'horizon' years.
-            - years (np.ndarray): A sorted array of all unique years in the original data.
-
-    Raises:
-        ValueError: If the number of unique years in the data is less than or equal to the horizon.
+    Splits a time-series dataset into training and testing sets.
+    If horizon > 0: Trains on early years, tests on the most recent 'horizon' years.
+    If horizon < 0: Trains on later years, tests on the earliest 'abs(horizon)' years.
     """
     years = np.sort(data["annee"].unique())
     num_years = len(years)
+    abs_h = abs(horizon)
     
-    if num_years <= horizon:
-        raise ValueError("Not enough elections in the selected period for horizon h.")
+    if num_years <= abs_h:
+        raise ValueError(f"Not enough elections ({num_years}) for horizon {horizon}.")
 
-    # 2. DROP COMMUNES WITH MISSING INFO
-    # We count how many years each commune appears in. 
-    # If a commune's count < total unique years, it has missing data.
+    # 1. DROP COMMUNES WITH MISSING INFO
     commune_counts = data.groupby("codecommune")["annee"].nunique()
     complete_communes = commune_counts[commune_counts == num_years].index
     data_clean = data[data["codecommune"].isin(complete_communes)].copy()
@@ -109,22 +97,27 @@ def split_serie_temp(data: pd.DataFrame, horizon: int) -> Tuple[pd.DataFrame, pd
     if dropped_count > 0:
         print(f"Dropped {dropped_count} communes due to missing election years.")
 
-    # 3. Split based on the cleaned data
-    train_years = years[:-horizon]
-    test_years = years[-horizon:]
+    # 2. Logic for Forward vs. Backward splitting
+    if horizon > 0:
+        # Standard: Test on the NEWEST years
+        train_years = years[:-horizon]
+        test_years = years[-horizon:]
+    else:
+        # Backcasting: Test on the OLDEST years
+        # Example: years=[86, 88, 93, 99], h=-2 -> test=[86, 88], train=[93, 99]
+        test_years = years[:abs_h]
+        train_years = years[abs_h:]
     
     train = data_clean[data_clean["annee"].isin(train_years)].copy()
     test = data_clean[data_clean["annee"].isin(test_years)].copy()
-    
-    return train, test, years
+    return train, test, train_years, test_years
 
 def create_election_mapping(years_list: list[int]) -> Tuple[dict[int, int], dict[int, int]]:
     """
     Creates bidirectional mapping between irregular years and a continuous index.
     """
-    sorted_years = sorted(list(set(years_list)))
-    year_to_idx = {year: i for i, year in enumerate(sorted_years)}
-    idx_to_year = {i: year for i, year in enumerate(sorted_years)}
+    year_to_idx = {year: i for i, year in enumerate(years_list)}
+    idx_to_year = {i: year for i, year in enumerate(years_list)}
     return year_to_idx, idx_to_year
 
 def apply_time_mapping(df: pd.DataFrame, time_col: str, mapping: dict[int, int]) -> pd.DataFrame:

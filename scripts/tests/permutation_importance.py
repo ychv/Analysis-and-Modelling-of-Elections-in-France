@@ -1,3 +1,6 @@
+###
+# Script not up to date with newest preprocessing logics
+###
 #Truc moche pour que les imports de src marchent
 import sys
 from pathlib import Path
