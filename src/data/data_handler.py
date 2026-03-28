@@ -103,3 +103,23 @@ class DataHandler:
 
         agg = weighted_df.groupby("dep").sum()
         self.agg_df = agg[target_cols].div(agg["pop"], axis=0).reset_index()
+
+    def aggregate_dep_inscrits(self):
+        """
+        Aggregates dataframe on department level, weighted sum using registered voters as ponderation.
+        """
+
+        df = self.df.copy()
+        df["pop"] = self.df["inscrits"]
+
+        exclude_cols = ["codecommune", "pop"]
+        target_cols = [c for c in self.df.columns if c not in exclude_cols]
+        df["dep"] = df["codecommune"].astype(str).str.zfill(5).str.slice(0, 2)
+        df.loc[df["dep"] == "97", "dep"] = df["codecommune"].str.slice(0, 3)
+
+        weighted_df = df[target_cols].multiply(df["pop"], axis=0)
+        weighted_df["dep"] = df["dep"]
+        weighted_df["pop"] = df["pop"]
+
+        agg = weighted_df.groupby("dep").sum()
+        self.agg_df = agg[target_cols].div(agg["pop"], axis=0).reset_index()
