@@ -1,6 +1,8 @@
 import warnings
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LassoCV
 from sklearn.metrics import r2_score,root_mean_squared_error
+from sklearn.model_selection import train_test_split
 from src.data.data_handler import DataHandler
 from src.model.models_rf import RegressorWrapper
 from src.config import random_seed, vote_features,data_year_filter,missing_data_thresh,type_pres,type_legis,cols_to_keep,full_dataset_path
@@ -44,13 +46,15 @@ def get_Xy(datadep):
     y = datadep["pvotepvoteD"]
     X = datadep.drop(columns=vote_features #+ ['dep','annee']
                      )
-    return X,y
+    X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2,random_state=random_seed)
+    return X,y,X_train, X_test, y_train, y_test
 
-X_GE, y_GE = get_Xy(data_GE)
-X_N, y_N = get_Xy(data_N)
-X_PACA, y_PACA = get_Xy(data_PACA)
+X_GE, y_GE, X_GE_train, X_GE_test, y_GE_train, y_GE_test = get_Xy(data_GE)
+X_N, y_N, X_N_train, X_N_test, y_N_train, y_N_test = get_Xy(data_N)
+X_PACA, y_PACA, X_PACA_train, X_PACA_test, y_PACA_train, y_PACA_test = get_Xy(data_PACA)
 
-############################### Regression #####################################
+############################### Regression with Random Forest #####################################
+print('######################### Random Forest #########################\n')
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     print('-------------------- Grand Est --------------------\n')
@@ -62,7 +66,7 @@ with warnings.catch_warnings():
     print('-------------------- Nord --------------------\n')
     reg_N = RegressorWrapper(base=RandomForestRegressor,n_estimators=100)
     reg_N.fit(X_N.to_numpy(),y_N.to_numpy())
-    perm_N = reg_GE.compute_permutation_importance(X_N,y_N,random_seed,1,'r2')
+    perm_N = reg_N.compute_permutation_importance(X_N,y_N,random_seed,1,'r2')
     print(perm_N)
 
     print('-------------------- PACA --------------------\n')
@@ -78,3 +82,25 @@ with warnings.catch_warnings():
     print('-------------------- PACA contre Grand Est --------------------\n')
     yPACAvsGEpred = reg_GE.predict(X_PACA.to_numpy())
     print(reg_GE.compute_permutation_importance(X_PACA,y_PACA,random_seed,1,'r2'))
+
+############################### Regression with Lasso #####################################
+print('######################### LASSO ##############################\n')
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    print('-------------------- Grand Est --------------------\n')
+    reg_GE = LassoCV()
+    reg_GE.fit(X_GE.to_numpy(),y_GE.to_numpy())
+    coeff_GE = reg_GE.coef_
+    print(coeff_GE)
+
+    print('-------------------- Nord --------------------\n')
+    reg_N = LassoCV()
+    reg_N.fit(X_N.to_numpy(),y_N.to_numpy())
+    coeff_N = reg_N.coef_
+    print(coeff_N)
+
+    print('-------------------- PACA --------------------\n')
+    reg_PACA = LassoCV()
+    reg_PACA.fit(X_PACA.to_numpy(),y_PACA.to_numpy())
+    coeff_PACA = reg_PACA.coef_
+    print(coeff_PACA)
